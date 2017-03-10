@@ -12,7 +12,7 @@ public class GameController : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
         // define tile network
-        tileLinks.Add(new int[] { 1, 2, 3, 4, 5}); // face 1
+        tileLinks.Add(new int[] { 2, 3, 4, 5, 6}); // face 1
         tileLinks.Add(new int[] { 1, 6, 10, 9, 3}); // face 2
         tileLinks.Add(new int[] { 2, 9, 8, 4, 1}); // face 3
         tileLinks.Add(new int[] { 1, 3, 8, 12, 5}); // face 4
@@ -33,21 +33,69 @@ public class GameController : MonoBehaviour {
         {
             if (Input.GetKeyDown(KeyCode.T))
             {
+                updateMoveOptions(index);
                 index += 1;
                 if (index > 11) index = 0;
-                // wipe all colouration
-                foreach(GameObject g in faces)
-                {
-                    g.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
-                }
-                // colour the selected tile
-                faces[index].GetComponent<Renderer>().material.SetColor("_Color", Color.cyan);
-                // colour tiles adjacent to selected
-                foreach (int i in tileLinks[index])
-                {
-                    faces[i-1].GetComponent<Renderer>().material.SetColor("_Color", Color.green);
-                }
             }
         }
-	}
+
+        // movement on the grid
+        // Q E
+        // A D
+        //  X
+
+        int newMove = movement(index);
+        if (newMove != -1)
+        {
+            index = newMove - 1;
+        }
+        updateMoveOptions(index);
+    }
+
+    void updateMoveOptions(int index)
+    {
+        // wipe all colouration
+        foreach (GameObject g in faces)
+        {
+            g.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
+        }
+        // colour the selected tile
+        faces[index].GetComponent<Renderer>().material.SetColor("_Color", Color.cyan);
+        // colour tiles adjacent to selected
+        foreach (int i in tileLinks[index])
+        {
+            faces[i - 1].GetComponent<Renderer>().material.SetColor("_Color", Color.green);
+        }
+
+    }
+
+    int movement(int sourceFace)
+    {
+        int targetFace = -1;
+        // manual movement
+        if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Keypad9))
+        {
+            targetFace = tileLinks[sourceFace][0];
+        }
+        
+        if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.Keypad6))
+        {
+            targetFace = tileLinks[sourceFace][1];
+        }
+        if (Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.Keypad2))
+        {
+            targetFace = tileLinks[sourceFace][2];
+        }
+        if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.Keypad4))
+        {
+            targetFace = tileLinks[sourceFace][3];
+        }
+        if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.Keypad7))
+        {
+            targetFace = tileLinks[sourceFace][4];
+        }
+
+        Debug.Log(targetFace);
+        return targetFace;
+    }
 }
