@@ -30,7 +30,7 @@ public class GameController : MonoBehaviour {
         tileLinks.Add(new int[] { 5, 12, 7, 10, 9 }); // face 11
         tileLinks.Add(new int[] { 4, 8, 7, 11, 5 }); // face 12
 
-        for(int i = 0; i < tileLinks.Count; i++)
+        for (int i = 0; i < tileLinks.Count; i++)
         {
             pentagon p = new pentagon();
             p.SetTile(faces[i]);
@@ -38,17 +38,17 @@ public class GameController : MonoBehaviour {
             p.SetLinks(tileLinks[i]);
             p.SetState(0);
             p.SetOccupied(false);
-            
+
 
             pentagons.Add(p);
         }
 
-        foreach(pentagon p in pentagons)
+        foreach (pentagon p in pentagons)
         {
             p.PrintAll();
         }
 
-        
+
         // Initialise player
         SpawnPlayer();
 
@@ -68,7 +68,7 @@ public class GameController : MonoBehaviour {
         public GameObject GetTile()
         {
             return tile;
-        } 
+        }
         public void SetTile(GameObject g)
         {
             tile = g;
@@ -114,11 +114,11 @@ public class GameController : MonoBehaviour {
         {
             state = Mathf.Clamp(st, 0, 4);
         }
-        
+
         public void PrintAll()
         {
             Debug.Log(string.Format("Pentagon index: {0} Occupied: {1} State: {2}", index, occupied, state));
-            for(int i = 0; i < links.Length; i++)
+            for (int i = 0; i < links.Length; i++)
             {
                 Debug.Log("link " + i + " : " + links[i]);
             }
@@ -153,26 +153,93 @@ public class GameController : MonoBehaviour {
                 // move player object
                 MovePlayerObject(newMove);
             }
-            UpdateMoveOptions(index);
+            //     UpdateMoveOptions(index);
         }
     }
 
     void MovePlayerObject(int targetTile, float offset = -0.1f)
     {
-        if (pentagons[targetTile - 1].GetOccupied())
+        pentagon p = pentagons[targetTile - 1];
+        if (p.GetOccupied())
         {
             // attack and destroy opponent if it can be destroyed
-            GameObject o = pentagons[targetTile - 1].GetOccupier();
+            GameObject o = p.GetOccupier();
             // Check tile status
-            // blanks can be black
+            // blanks can come on blanks
+            try
+            {
+                if (o.transform.tag == "BlackToad")
+                {
+                    if (p.GetState() == 0)
+                    {
+                        p.SetOccupier(null);
+                        p.SetState(1);
+                        Destroy(o, 0.1f);
+                        // colour the tile black
+                        SetPentagonColour(Color.black, p.GetTile());
 
-            // black can be next 
+                    }
+                }
 
-            // black
-            Destroy(o, 0.1f);
-            
+                if (o.transform.tag == "WhiteEagle")
+                {
+                    if (p.GetState() == 1)
+                    {
+                        p.SetOccupier(null);
+                        p.SetState(1);
+                        Destroy(o, 0.1f);
+                        // colour the tile black
+                        SetPentagonColour(Color.white, p.GetTile());
 
+
+                    }
+                }
+
+                if (o.transform.tag == "RedPelican")
+                {
+                    if (p.GetState() == 2)
+                    {
+                        p.SetOccupier(null);
+                        p.SetState(3);
+                        Destroy(o, 0.1f);
+                        // colour the tile black
+                        SetPentagonColour(Color.red, p.GetTile());
+                    }
+
+
+                }
+
+                if (o.transform.tag == "GreenLion")
+                {
+                    if (p.GetState() == 4)
+                    {
+                        p.SetOccupier(null);
+                        p.SetState(3);
+                        Destroy(o, 0.1f);
+                        // colour the tile black
+                        SetPentagonColour(Color.yellow, p.GetTile());
+                    }
+
+
+                }
+
+                // if the opponent isn't standing on a proper tile then you can't move there
+                Debug.Log("Can't move there, wrong tile and opponent combination");
+                return;
+
+
+            }
+            catch
+        {
+            Debug.Log("Couldn't access tile occupier");
         }
+
+        // black can be next 
+
+        // black
+
+
+    }
 
         playerObject.transform.position = (pentagons[targetTile - 1].GetTile().transform.position);
             playerObject.transform.SetParent(pentagons[targetTile - 1].GetTile().transform);
@@ -180,6 +247,25 @@ public class GameController : MonoBehaviour {
             playerObject.transform.eulerAngles += new Vector3(0, 0, 180);
             playerObject.transform.Translate(Vector3.forward * offset);
         
+    }
+
+    void BasicAIMove()
+    {
+
+    }
+
+
+    void SetPentagonColour(Color c, GameObject p)
+    {
+        p.GetComponent<Renderer>().material.SetColor("_Color", c);
+        foreach (Transform t in p.transform)
+        {
+
+            if (t.gameObject.tag == "Pentagon")
+            {
+                t.GetComponent<Renderer>().material.SetColor("_Color", c);
+            }
+        }
     }
 
     void UpdateMoveOptions(int index)
