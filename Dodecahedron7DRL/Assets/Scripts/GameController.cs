@@ -7,8 +7,9 @@ public class GameController : MonoBehaviour {
     public bool DebugOn = true;
     public List<int[]> tileLinks = new List<int[]>();
     public List<GameObject> faces = new List<GameObject>();
+    List<GameObject> toads = new List<GameObject>();
     public GameObject playerObject;
-
+    public GameObject toadObject;
     int index = 0;
 	// Use this for initialization
 	void Start () {
@@ -26,6 +27,17 @@ public class GameController : MonoBehaviour {
         tileLinks.Add(new int[] { 5, 12, 7, 10, 9}); // face 11
         tileLinks.Add(new int[] { 4, 8, 7, 11, 5}); // face 12
 
+        // test distance check
+        for (int st = 0; st < 12; st++)
+        {
+            for (int tt = 0; tt < 12; tt++)
+            {
+                int res = ProximityCheck(st, tt);
+                Debug.Log("Target tile " + (tt + 1) + " is " + res + " steps away from the source tile " + (st + 1));
+            }
+        }
+
+        SpawnToads(2);
     }
 
     // Update is called once per frame
@@ -62,9 +74,7 @@ public class GameController : MonoBehaviour {
         playerObject.transform.SetParent(faces[index].transform);
         playerObject.transform.rotation = faces[index].transform.rotation;
         playerObject.transform.eulerAngles += new Vector3(0, 0, 180);
-        
-
-
+       
     }
 
     void UpdateMoveOptions(int index)
@@ -112,4 +122,81 @@ public class GameController : MonoBehaviour {
         Debug.Log(targetFace);
         return targetFace;
     }
+
+
+    int ProximityCheck(int sourceTile, int targetTile)
+    {
+        // check how far the target tile is from the source tile
+
+        // source and target are identical
+        if (sourceTile == targetTile)
+        {
+            return 0;
+        }
+
+        foreach(int tile in tileLinks[sourceTile])
+        {
+            if(targetTile == (tile - 1))
+            {
+                return 1;
+            }
+        }
+
+        foreach(int tile in tileLinks[sourceTile])
+        {
+            foreach(int secondTile in tileLinks[(tile-1)])
+            {
+                if (targetTile == (secondTile - 1))
+                {
+                    return 2;
+                }
+            }
+        }
+
+        // if it's nothing else, then it has to be on the opposite side
+        return 3;
+
+        
+    }
+
+    // Spawn toads
+    void SpawnToads(int amount)
+    {
+        // first level spawn
+        // don't spawn next to player, don't spawn on top of each other
+        int[] tilesSpawnedOn = new int [amount + 1];
+        // player should be on tile 1
+        tilesSpawnedOn[0] = 0;
+
+
+        int targetTile = Random.Range(0,11);
+        int created = 0;
+        while (created < amount)
+        {
+
+            while (ProximityCheck(0, targetTile) < 2 || tilesSpawnedOn.Contains(targetTile))
+            {
+                targetTile = Random.Range(0, 11);
+            }
+
+            GameObject newToad = Instantiate(toadObject, transform.position, Quaternion.identity) as GameObject;
+
+            newToad.transform.position = (faces[targetTile].transform.position);
+            newToad.transform.Translate(Vector3.forward * 0.1f);
+            newToad.transform.SetParent(faces[targetTile].transform);
+            newToad.transform.rotation = faces[targetTile].transform.rotation;
+            newToad.transform.eulerAngles += new Vector3(0, 0, 180);
+
+            tilesSpawnedOn[created + 1] = targetTile;
+            Debug.Log("Creating toad on tile " + targetTile);
+
+            created += 1;
+            
+        }
+
+
+
+    }
+
+
 }
