@@ -7,13 +7,14 @@ public class GameController : MonoBehaviour {
     public bool DebugOn = true;
     public List<int[]> tileLinks = new List<int[]>();
     public List<GameObject> faces = new List<GameObject>();
+    public GameObject playerObject;
 
     int index = 0;
 	// Use this for initialization
 	void Start () {
         // define tile network
         tileLinks.Add(new int[] { 2, 3, 4, 5, 6}); // face 1
-        tileLinks.Add(new int[] { 9, 3, 1, 10, 6}); // face 2
+        tileLinks.Add(new int[] { 9, 3, 1, 6, 10}); // face 2
         tileLinks.Add(new int[] { 8, 4, 1, 2, 9}); // face 3
         tileLinks.Add(new int[] { 12, 5, 1, 3, 8}); // face 4
         tileLinks.Add(new int[] { 11, 6, 1, 4, 12}); // face 5
@@ -33,7 +34,7 @@ public class GameController : MonoBehaviour {
         {
             if (Input.GetKeyDown(KeyCode.T))
             {
-                updateMoveOptions(index);
+                UpdateMoveOptions(index);
                 index += 1;
                 if (index > 11) index = 0;
             }
@@ -48,11 +49,25 @@ public class GameController : MonoBehaviour {
         if (newMove != -1)
         {
             index = newMove - 1;
+            // move player object
+            MovePlayerObject();
         }
-        updateMoveOptions(index);
+        UpdateMoveOptions(index);
     }
 
-    void updateMoveOptions(int index)
+    void MovePlayerObject()
+    {
+        playerObject.transform.position = (faces[index].transform.position);
+        playerObject.transform.Translate(Vector3.forward * -0.075f);
+        playerObject.transform.SetParent(faces[index].transform);
+        playerObject.transform.rotation = faces[index].transform.rotation;
+        playerObject.transform.eulerAngles += new Vector3(0, 0, 180);
+        
+
+
+    }
+
+    void UpdateMoveOptions(int index)
     {
         // wipe all colouration
         foreach (GameObject g in faces)
