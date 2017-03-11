@@ -5,43 +5,128 @@ using UnityEngine;
 
 public class GameController : MonoBehaviour {
     public bool DebugOn = true;
+    enum gamestates { inBetween, playerTurn, opponentTurn };
+    gamestates gamestate = gamestates.playerTurn;
     public List<int[]> tileLinks = new List<int[]>();
     public List<GameObject> faces = new List<GameObject>();
+    List<pentagon> pentagons = new List<pentagon>();
     List<GameObject> toads = new List<GameObject>();
     public GameObject playerObject;
     public GameObject toadObject;
     int index = 0;
-	// Use this for initialization
-	void Start () {
+    // Use this for initialization
+    void Start() {
         // define tile network
-        tileLinks.Add(new int[] { 2, 3, 4, 5, 6}); // face 1
-        tileLinks.Add(new int[] { 9, 3, 1, 6, 10}); // face 2
-        tileLinks.Add(new int[] { 8, 4, 1, 2, 9}); // face 3
-        tileLinks.Add(new int[] { 12, 5, 1, 3, 8}); // face 4
-        tileLinks.Add(new int[] { 11, 6, 1, 4, 12}); // face 5
-        tileLinks.Add(new int[] { 10, 2, 1, 5, 11}); // face 6
-        tileLinks.Add(new int[] { 8, 9, 10, 11, 12}); // face 7
-        tileLinks.Add(new int[] { 3, 9, 7, 12, 4}); // face 8
-        tileLinks.Add(new int[] { 2, 10, 7, 8, 3}); // face 9
-        tileLinks.Add(new int[] { 6, 11, 7, 9, 2}); // face 10
-        tileLinks.Add(new int[] { 5, 12, 7, 10, 9}); // face 11
-        tileLinks.Add(new int[] { 4, 8, 7, 11, 5}); // face 12
+        tileLinks.Add(new int[] { 2, 3, 4, 5, 6 }); // face 1
+        tileLinks.Add(new int[] { 9, 3, 1, 6, 10 }); // face 2
+        tileLinks.Add(new int[] { 8, 4, 1, 2, 9 }); // face 3
+        tileLinks.Add(new int[] { 12, 5, 1, 3, 8 }); // face 4
+        tileLinks.Add(new int[] { 11, 6, 1, 4, 12 }); // face 5
+        tileLinks.Add(new int[] { 10, 2, 1, 5, 11 }); // face 6
+        tileLinks.Add(new int[] { 8, 9, 10, 11, 12 }); // face 7
+        tileLinks.Add(new int[] { 3, 9, 7, 12, 4 }); // face 8
+        tileLinks.Add(new int[] { 2, 10, 7, 8, 3 }); // face 9
+        tileLinks.Add(new int[] { 6, 11, 7, 9, 2 }); // face 10
+        tileLinks.Add(new int[] { 5, 12, 7, 10, 9 }); // face 11
+        tileLinks.Add(new int[] { 4, 8, 7, 11, 5 }); // face 12
 
-        // test distance check
-        for (int st = 0; st < 12; st++)
+        for(int i = 0; i < tileLinks.Count; i++)
         {
-            for (int tt = 0; tt < 12; tt++)
-            {
-                int res = ProximityCheck(st, tt);
-                Debug.Log("Target tile " + (tt + 1) + " is " + res + " steps away from the source tile " + (st + 1));
-            }
+            pentagon p = new pentagon();
+            p.SetTile(faces[i]);
+            p.SetIndex(i);
+            p.SetLinks(tileLinks[i]);
+            p.SetState(0);
+            p.SetOccupied(false);
+            
+
+            pentagons.Add(p);
         }
 
-        SpawnToads(2);
+        foreach(pentagon p in pentagons)
+        {
+            p.PrintAll();
+        }
+
+        
+        // Initialise player
+        SpawnPlayer();
+
+        SpawnToads(5);
+    }
+
+    class pentagon
+    {
+        GameObject tile;
+        GameObject occupierObject;
+        int index; // 1 - 12
+        int[] links; // which five other pentagons are adjacent
+        bool occupied;
+        int state; // 0 blank, 1 black, 2 white, 3 red, 4 gold
+
+
+        public GameObject GetTile()
+        {
+            return tile;
+        } 
+        public void SetTile(GameObject g)
+        {
+            tile = g;
+        }
+        public GameObject GetOccupier()
+        {
+            return occupierObject;
+        }
+        public void SetOccupier(GameObject occupier)
+        {
+            occupierObject = occupier;
+        }
+        public int GetIndex()
+        {
+            return index;
+        }
+        public void SetIndex(int i)
+        {
+            i = Mathf.Clamp(i, 0, 11);
+            index = i;
+        }
+        public int[] GetLinks()
+        {
+            return links;
+        }
+        public void SetLinks(int[] l)
+        {
+            links = l;
+        }
+        public bool GetOccupied()
+        {
+            return occupied;
+        }
+        public void SetOccupied(bool isOccupied = false)
+        {
+            occupied = isOccupied;
+        }
+        public int GetState()
+        {
+            return state;
+        }
+        public void SetState(int st = 0)
+        {
+            state = Mathf.Clamp(st, 0, 4);
+        }
+        
+        public void PrintAll()
+        {
+            Debug.Log(string.Format("Pentagon index: {0} Occupied: {1} State: {2}", index, occupied, state));
+            for(int i = 0; i < links.Length; i++)
+            {
+                Debug.Log("link " + i + " : " + links[i]);
+            }
+        }
     }
 
     // Update is called once per frame
-    void Update () {
+    void Update() {
         if (DebugOn)
         {
             if (Input.GetKeyDown(KeyCode.T))
@@ -57,24 +142,44 @@ public class GameController : MonoBehaviour {
         // A D
         //  X
 
-        int newMove = movement(index);
-        if (newMove != -1)
+        // player turn
+        if (gamestate == gamestates.playerTurn)
         {
-            index = newMove - 1;
-            // move player object
-            MovePlayerObject();
+            int newMove = Movement(index);
+
+            if (newMove != -1)
+            {
+                index = newMove - 1;
+                // move player object
+                MovePlayerObject(newMove);
+            }
+            UpdateMoveOptions(index);
         }
-        UpdateMoveOptions(index);
     }
 
-    void MovePlayerObject()
+    void MovePlayerObject(int targetTile, float offset = -0.1f)
     {
-        playerObject.transform.position = (faces[index].transform.position);
-        playerObject.transform.Translate(Vector3.forward * -0.075f);
-        playerObject.transform.SetParent(faces[index].transform);
-        playerObject.transform.rotation = faces[index].transform.rotation;
-        playerObject.transform.eulerAngles += new Vector3(0, 0, 180);
-       
+        if (pentagons[targetTile - 1].GetOccupied())
+        {
+            // attack and destroy opponent if it can be destroyed
+            GameObject o = pentagons[targetTile - 1].GetOccupier();
+            // Check tile status
+            // blanks can be black
+
+            // black can be next 
+
+            // black
+            Destroy(o, 0.1f);
+            
+
+        }
+
+        playerObject.transform.position = (pentagons[targetTile - 1].GetTile().transform.position);
+            playerObject.transform.SetParent(pentagons[targetTile - 1].GetTile().transform);
+            playerObject.transform.rotation = pentagons[targetTile - 1].GetTile().transform.rotation;
+            playerObject.transform.eulerAngles += new Vector3(0, 0, 180);
+            playerObject.transform.Translate(Vector3.forward * offset);
+        
     }
 
     void UpdateMoveOptions(int index)
@@ -83,6 +188,13 @@ public class GameController : MonoBehaviour {
         foreach (GameObject g in faces)
         {
             g.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
+            foreach (Transform t in g.transform)
+            {
+                if (t.gameObject.tag == "Pentagon")
+                {
+                    t.transform.GetComponent<Renderer>().material.SetColor("_Color", Color.white);
+                }
+            }
         }
         // colour the selected tile
         faces[index].GetComponent<Renderer>().material.SetColor("_Color", Color.cyan);
@@ -90,11 +202,19 @@ public class GameController : MonoBehaviour {
         foreach (int i in tileLinks[index])
         {
             faces[i - 1].GetComponent<Renderer>().material.SetColor("_Color", Color.green);
-        }
+            foreach (Transform t in faces[i - 1].transform)
+            {
 
+                if (t.gameObject.tag == "Pentagon")
+                {
+                    t.GetComponent<Renderer>().material.SetColor("_Color", Color.green);
+                }
+            }
+
+        }
     }
 
-    int movement(int sourceFace)
+    int Movement(int sourceFace)
     {
         int targetFace = -1;
         // manual movement
@@ -119,7 +239,7 @@ public class GameController : MonoBehaviour {
             targetFace = tileLinks[sourceFace][4];
         }
 
-        Debug.Log(targetFace);
+//        Debug.Log(targetFace);
         return targetFace;
     }
 
@@ -134,17 +254,17 @@ public class GameController : MonoBehaviour {
             return 0;
         }
 
-        foreach(int tile in tileLinks[sourceTile])
+        foreach (int tile in tileLinks[sourceTile])
         {
-            if(targetTile == (tile - 1))
+            if (targetTile == (tile - 1))
             {
                 return 1;
             }
         }
 
-        foreach(int tile in tileLinks[sourceTile])
+        foreach (int tile in tileLinks[sourceTile])
         {
-            foreach(int secondTile in tileLinks[(tile-1)])
+            foreach (int secondTile in tileLinks[(tile - 1)])
             {
                 if (targetTile == (secondTile - 1))
                 {
@@ -156,7 +276,12 @@ public class GameController : MonoBehaviour {
         // if it's nothing else, then it has to be on the opposite side
         return 3;
 
-        
+
+    }
+
+    void SpawnPlayer()
+    {
+        PlaceOnFace(playerObject, 0, -0.2f);
     }
 
     // Spawn toads
@@ -164,12 +289,12 @@ public class GameController : MonoBehaviour {
     {
         // first level spawn
         // don't spawn next to player, don't spawn on top of each other
-        int[] tilesSpawnedOn = new int [amount + 1];
+        int[] tilesSpawnedOn = new int[amount + 1];
         // player should be on tile 1
         tilesSpawnedOn[0] = 0;
 
 
-        int targetTile = Random.Range(0,11);
+        int targetTile = Random.Range(0, 11);
         int created = 0;
         while (created < amount)
         {
@@ -181,21 +306,29 @@ public class GameController : MonoBehaviour {
 
             GameObject newToad = Instantiate(toadObject, transform.position, Quaternion.identity) as GameObject;
 
-            newToad.transform.position = (faces[targetTile].transform.position);
-            newToad.transform.Translate(Vector3.forward * 0.1f);
-            newToad.transform.SetParent(faces[targetTile].transform);
-            newToad.transform.rotation = faces[targetTile].transform.rotation;
-            newToad.transform.eulerAngles += new Vector3(0, 0, 180);
+            PlaceOnFace(newToad, targetTile);
 
             tilesSpawnedOn[created + 1] = targetTile;
+
+            pentagons[targetTile].SetOccupied(true);
+            pentagons[targetTile].SetOccupier(newToad);
             Debug.Log("Creating toad on tile " + targetTile);
 
+
             created += 1;
-            
+
         }
 
+    }
 
-
+   void PlaceOnFace(GameObject g, int targetTile, float offset = 0.2f)
+    {
+       
+        g.transform.position = (faces[targetTile].transform.position);
+        g.transform.Translate(Vector3.forward * offset);
+        g.transform.SetParent(faces[targetTile].transform);
+        g.transform.rotation = faces[targetTile].transform.rotation;
+        g.transform.eulerAngles += new Vector3(0, 0, 180);
     }
 
 
