@@ -25,6 +25,9 @@ public class GameController : MonoBehaviour {
     public GameObject pelicanObject;
     public GameObject lionObject;
     public GameObject goldObject;
+    // effects
+    public GameObject sprayEffect;
+
     int[] enemyStrengths = { 1, 2, 4, 8 }; // toad, eagle, pelican, lion
     int index = 0;
     int turnCounter = 0;
@@ -74,7 +77,6 @@ public class GameController : MonoBehaviour {
         {
             p.PrintAll();
         }
-
 
         // Initialise player
         SpawnPlayer();
@@ -164,11 +166,28 @@ public class GameController : MonoBehaviour {
                                 int s = Random.Range(0, 10);
                                 if (s < 4)
                                 {
-                                    // spawn toads
-                                    SpawnEnemy(enemyTypes.toad, 2);
+                                    // spawn toads, but only if the total sum of live toads
+                                    // and tiles that are at status one or more is less than 11
+                                    int toadTotal = 0;
+                                    foreach (pentagon p in pentagons)
+                                    {
+                                        if(p.GetOccupier().transform.tag == "BlackToad")
+                                        {
+                                            toadTotal++;
+                                        }
+                                        if(p.GetState() > 0)
+                                        {
+                                            toadTotal++;
+                                        }
+                                    }
+                                    if (toadTotal < 11)
+                                    {
+                                        SpawnEnemy(enemyTypes.toad, 2);
+                                    }
                                 }
                                 else
-                                { // spawn something else
+                                { 
+                                    // spawn something else, and do it in sequence
                                     enemyTypeCounter += 1;
                                     if (enemyTypeCounter > 3)
                                     {
@@ -184,7 +203,14 @@ public class GameController : MonoBehaviour {
                                     } else if(enemyTypeCounter == 3)
                                     {
                                         SpawnEnemy(enemyTypes.lion, 2);
+                                        enemyTypeCounter = 0;
                                     }
+                                }
+
+                                // sometimes also spawn loot
+                                if(Random.Range(0,10) < 5)
+                                {
+                                    SpawnEnemy(enemyTypes.gold, 1);
                                 }
                             }    
                         }
@@ -349,8 +375,6 @@ public class GameController : MonoBehaviour {
                         SetPentagonColour(Color.yellow, p.GetTile());
        
                     }
-
-
                 }
                 else
                 {
@@ -358,9 +382,6 @@ public class GameController : MonoBehaviour {
                     Debug.Log("Can't move there, wrong tile and opponent combination");
                     validMove = false;
                 }
-
-
-
             }
             catch
         {
@@ -436,7 +457,6 @@ public class GameController : MonoBehaviour {
 
         if (proximity == 2)
         {
-            
             for (int i = 0; i < 5; i++)
             {
                 int s = tileLinks[enemyTileIndex][i] - 1;
@@ -452,7 +472,6 @@ public class GameController : MonoBehaviour {
                             }
                         }
                     }
-
                 }
             }
         }
@@ -497,17 +516,14 @@ public class GameController : MonoBehaviour {
 
 
         // if player is three steps away, plot course there - maybe it could just wait?
-
         int x = 1;
     }
-
 
     void SetPentagonColour(Color c, GameObject p)
     {
         p.GetComponent<Renderer>().material.SetColor("_Color", c);
         foreach (Transform t in p.transform)
         {
-
             if (t.gameObject.tag == "Pentagon")
             {
                 t.GetComponent<Renderer>().material.SetColor("_Color", c);
@@ -537,13 +553,11 @@ public class GameController : MonoBehaviour {
             faces[i - 1].GetComponent<Renderer>().material.SetColor("_Color", Color.green);
             foreach (Transform t in faces[i - 1].transform)
             {
-
                 if (t.gameObject.tag == "Pentagon")
                 {
                     t.GetComponent<Renderer>().material.SetColor("_Color", Color.green);
                 }
             }
-
         }
     }
 
@@ -571,8 +585,6 @@ public class GameController : MonoBehaviour {
         {
             targetFace = tileLinks[sourceFace][4];
         }
-
-//        Debug.Log(targetFace);
         return targetFace;
     }
 
@@ -609,7 +621,6 @@ public class GameController : MonoBehaviour {
         // if it's nothing else, then it has to be on the opposite side
         return 3;
 
-
     }
 
     void SpawnPlayer()
@@ -619,41 +630,9 @@ public class GameController : MonoBehaviour {
         pentagons[0].SetOccupier(playerObject);
     }
 
-    // Spawn toads
-    void SpawnToads(int amount)
-    {
-        // first level spawn
-        // don't spawn next to player, don't spawn on top of each other
-        int[] tilesSpawnedOn = new int[amount + 1];
-        // player should be on tile 1
-        tilesSpawnedOn[0] = 0;
-
-        int targetTile = Random.Range(0, 11);
-        int created = 0;
-        while (created < amount)
-        {
-
-            while (ProximityCheck(0, targetTile) < 2 || tilesSpawnedOn.Contains(targetTile))
-            {
-                targetTile = Random.Range(1, 11);
-            }
-
-            GameObject newToad = Instantiate(toadObject, transform.position, Quaternion.identity) as GameObject;
-
-            PlaceOnFace(newToad, targetTile);
-            tilesSpawnedOn[created + 1] = targetTile;
-            pentagons[targetTile].SetOccupied(true);
-            pentagons[targetTile].SetOccupier(newToad);
-            Debug.Log("Creating toad on tile " + targetTile);
-            toads.Add(newToad);
-            allOpponents.Add(newToad);
-            created += 1;
-        }
-
-    }
-
     void SpawnEnemy(enemyTypes e, int amount)
     {
+        // Also applicable to any item
         GameObject enemyObject = null;
         if(e == enemyTypes.toad)
         {
@@ -671,7 +650,7 @@ public class GameController : MonoBehaviour {
         {
             enemyObject = goldObject;
         }
-        // second level spawn
+
         // don't spawn next to player, don't spawn on top of each other
         List<int> occupiedTiles = new List<int>();
         for (int i = 0; i < 12; i++)
@@ -686,9 +665,9 @@ public class GameController : MonoBehaviour {
         int targetTile = Random.Range(0, 11);
         int created = 0;
         
+        // reroll if necessary
         while (created < amount)
         {
-
             while (ProximityCheck(0, targetTile) < 1 || occupiedTiles.Contains(targetTile))
             {
                 attempts--;
@@ -768,10 +747,7 @@ public class GameController : MonoBehaviour {
                 break;
             }
         }
-
     }
-
-
 
     void PlaceOnFace(GameObject g, int targetTile, float offset = 0.1f)
     {
@@ -779,9 +755,7 @@ public class GameController : MonoBehaviour {
         g.transform.SetParent(faces[targetTile].transform);
         g.transform.rotation = faces[targetTile].transform.rotation;
         g.transform.eulerAngles += new Vector3(0, 0, 180);
-        g.transform.Translate(Vector3.forward * offset);
-
-
+        g.transform.Translate(Vector3.forward * offset); // translate last
     }
 
 
@@ -844,7 +818,6 @@ public class GameController : MonoBehaviour {
         {
             state = Mathf.Clamp(st, 0, 4);
         }
-
         public void PrintAll()
         {
             Debug.Log(string.Format("Pentagon index: {0} Occupied: {1} State: {2}", index, occupied, state));
@@ -860,6 +833,10 @@ public class GameController : MonoBehaviour {
         int damage = 0;
 
         // Fire off an effect?
+        GameObject newEffect = Instantiate(sprayEffect, enemyTile.GetTile().transform);
+        newEffect.transform.LookAt(playerObject.transform);
+        Destroy(newEffect, 1.0f);
+
 
         List<string> damageMessages = new List<string>();
         // derive attack power from enemy type
