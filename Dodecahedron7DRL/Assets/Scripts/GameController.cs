@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class GameController : MonoBehaviour {
     public bool DebugOn = true;
+    bool gameOver =false;
     enum gamestates { inBetween, playerTurn, opponentTurn };
     gamestates gamestate = gamestates.playerTurn;
-    enum enemyTypes { toad, eagle, pelican, lion };
+    enum enemyTypes { toad, eagle, pelican, lion, gold };
     public List<int[]> tileLinks = new List<int[]>();
     public List<GameObject> faces = new List<GameObject>();
     List<pentagon> pentagons = new List<pentagon>();
@@ -22,6 +24,8 @@ public class GameController : MonoBehaviour {
     public GameObject eagleObject;
     public GameObject pelicanObject;
     public GameObject lionObject;
+    public GameObject goldObject;
+    int[] enemyStrengths = { 1, 2, 4, 8 }; // toad, eagle, pelican, lion
     int index = 0;
     int turnCounter = 0;
     int turnLastSpawned = 0;
@@ -33,6 +37,14 @@ public class GameController : MonoBehaviour {
 
     // Use this for initialization
     void Start() {
+        int startPhrase = Random.Range(0, 10);
+        if (startPhrase < 5)
+        {
+            Log("The old unperishable urge overtakes you once more so you find yourself here.");
+        } else
+        {
+            Log("You've made time for this so it had better count.");
+        }
         // define tile network
         tileLinks.Add(new int[] { 2, 3, 4, 5, 6 }); // face 1
         tileLinks.Add(new int[] { 9, 3, 1, 6, 10 }); // face 2
@@ -68,6 +80,7 @@ public class GameController : MonoBehaviour {
         SpawnPlayer();
 
         SpawnEnemy(enemyTypes.toad, 2);
+        SpawnEnemy(enemyTypes.gold, 2);
     }
 
     // Update is called once per frame
@@ -82,29 +95,43 @@ public class GameController : MonoBehaviour {
             }
         }
 
+        // Reset stage
+        if(Input.GetKeyDown(KeyCode.N))
+        {
+            SceneManager.LoadScene(0);
+        }
+
         // movement on the grid
         // Q E
         // A D
         //  X
+
+        if(gameOver)
+        {
+            gamestate = gamestates.inBetween;
+        }
+
 
         // player turn
         if (gamestate == gamestates.playerTurn)
         {
             int newMove = Movement(index);
 
-            if(Input.GetKeyDown(KeyCode.B))
+            if (DebugOn)
             {
-                SpawnEnemy(enemyTypes.eagle,2);
+                if (Input.GetKeyDown(KeyCode.B))
+                {
+                    SpawnEnemy(enemyTypes.eagle, 2);
+                }
+                if (Input.GetKeyDown(KeyCode.P))
+                {
+                    SpawnEnemy(enemyTypes.pelican, 2);
+                }
+                if (Input.GetKeyDown(KeyCode.L))
+                {
+                    SpawnEnemy(enemyTypes.lion, 2);
+                }
             }
-            if (Input.GetKeyDown(KeyCode.P))
-            {
-                SpawnEnemy(enemyTypes.pelican, 2);
-            }
-            if (Input.GetKeyDown(KeyCode.L))
-            {
-                SpawnEnemy(enemyTypes.lion, 2);
-            }
-
             if (newMove != -1)
             {
                 index = newMove - 1;
@@ -185,14 +212,14 @@ public class GameController : MonoBehaviour {
                         }
                         if (pelicans.Count > 0)
                         {
-                            for (int i = 0; i < eagles.Count; i++)
+                            for (int i = 0; i < pelicans.Count; i++)
                             {
                                 BasicAIMove(pelicans[i]);
                             }
                         }
                         if (lions.Count > 0)
                         {
-                            for (int i = 0; i < eagles.Count; i++)
+                            for (int i = 0; i < lions.Count; i++)
                             {
                                 BasicAIMove(lions[i]);
                             }
@@ -235,17 +262,29 @@ public class GameController : MonoBehaviour {
         pentagon p = pentagons[targetTile - 1];
         if (p.GetOccupied())
         {
+            validMove = false;
             // attack and destroy opponent if it can be destroyed
             GameObject o = p.GetOccupier();
             // Check tile status
             // blanks can come on blanks
             try
             {
-                validMove = true;
-                if (o.transform.tag == "BlackToad")
+                // pickup gold
+                if (o.transform.tag == "GoldPiece")
+                {
+                    gold += 1;
+                    validMove = true;
+                    p.SetOccupier(null);
+                    allOpponents.Remove(o);
+                    Destroy(o, 0.1f);
+                    Log("You pick up some gold.");
+                }
+
+                else if (o.transform.tag == "BlackToad")
                 {
                     if (p.GetState() == 0)
                     {
+                        validMove = true;
                         p.SetOccupier(null);
                         p.SetState(1);
                         toads.Remove(o);
@@ -262,14 +301,16 @@ public class GameController : MonoBehaviour {
                 {
                     if (p.GetState() == 1)
                     {
+                        validMove = true;
                         p.SetOccupier(null);
                         p.SetState(1);
                         allOpponents.Remove(o);
+                        eagles.Remove(o);
 
                         Destroy(o, 0.1f);
 
-                        // colour the tile black
-                        SetPentagonColour(Color.cyan, p.GetTile());
+                        // colour the tile bright white
+                        SetPentagonColour(Color.white, p.GetTile());
                
 
                     }
@@ -279,9 +320,11 @@ public class GameController : MonoBehaviour {
                 {
                     if (p.GetState() == 2)
                     {
+                        validMove = true;
                         p.SetOccupier(null);
                         p.SetState(3);
                         allOpponents.Remove(o);
+                        pelicans.Remove(o);
                         Destroy(o, 0.1f);
                         // colour the tile black
                         SetPentagonColour(Color.red, p.GetTile());
@@ -295,12 +338,14 @@ public class GameController : MonoBehaviour {
                 {
                     if (p.GetState() == 4)
                     {
+                        validMove = true;
                         p.SetOccupier(null);
                         p.SetState(3);
                         allOpponents.Remove(o);
+                        lions.Remove(o);
 
                         Destroy(o, 0.1f);
-                        // colour the tile black
+                        // colour the tile yellow
                         SetPentagonColour(Color.yellow, p.GetTile());
        
                     }
@@ -320,18 +365,23 @@ public class GameController : MonoBehaviour {
             catch
         {
             Debug.Log("Couldn't access tile occupier");
-
+                validMove = false;
         }
-
-        // black can be next 
-
-        // black
-
 
     }
         if (validMove)
         {
-            playerObject.transform.position = (p.GetTile().transform.position);
+            pentagon source = null;
+            foreach (pentagon p2 in pentagons)
+            {
+                if (p2.GetOccupier() == playerObject)
+                {
+                    source = p2;
+                }
+            }
+
+            MoveObject(source, p);
+        /*    playerObject.transform.position = (p.GetTile().transform.position);
             playerObject.transform.SetParent(p.GetTile().transform);
             playerObject.transform.rotation = p.GetTile().transform.rotation;
             playerObject.transform.eulerAngles += new Vector3(0, 0, 180);
@@ -343,12 +393,11 @@ public class GameController : MonoBehaviour {
                 {
                     p2.SetOccupier(null);
                     Debug.Log("Setting player to tile index " + p.GetIndex());
+                    
                     p.SetOccupier(playerObject);
-
                 }
             }
-            
-
+            */
         }
         return validMove;
     }
@@ -378,8 +427,10 @@ public class GameController : MonoBehaviour {
 
         int proximity = ProximityCheck(enemyTileIndex, playerTileIndex);
         // if player is next door, attack them and they die
-        EndGame();
-
+        if (proximity == 1)
+        {
+            AttackPlayer(enemyTile);
+        }
         // if player is two steps away, check the proximity to the player from each neighbouring tile
         int[] possibleMoves = new int[5] { -1, -1, -1, -1, -1 };
 
@@ -616,6 +667,9 @@ public class GameController : MonoBehaviour {
         } else if (e == enemyTypes.lion)
         {
             enemyObject = lionObject;
+        } else if (e == enemyTypes.gold)
+        {
+            enemyObject = goldObject;
         }
         // second level spawn
         // don't spawn next to player, don't spawn on top of each other
@@ -659,6 +713,8 @@ public class GameController : MonoBehaviour {
                 string[] creationMessages =
                 {
                     "A black toad appears.",
+                    "Another black toad appears.",
+                    "Dark foamy spawn has grown into a full toad. It stares at you fixedly.",
                     "Some crack in the floor has brought forth a black toad.",
                     "You hear the bristly ribbit of a nearby black toad.",
                     "There is no shortage of black toads in this world and here comes another one.",
@@ -676,7 +732,7 @@ public class GameController : MonoBehaviour {
                 string[] creationMessages =
                 {
                     "A white eagle swoops down near you.",
-                    ""
+                    "A wild eagle plumed in brilliant white lands nearby."
                 };
 
                 Log(creationMessages[Random.Range(0, creationMessages.Count())]);
@@ -799,9 +855,55 @@ public class GameController : MonoBehaviour {
         }
     }
 
+    void AttackPlayer(pentagon enemyTile)
+    {
+        int damage = 0;
+
+        // Fire off an effect?
+
+        List<string> damageMessages = new List<string>();
+        // derive attack power from enemy type
+        GameObject enemy = enemyTile.GetOccupier();
+        if(enemy.transform.tag == "BlackToad")
+        {
+            damage = enemyStrengths[0];
+            damageMessages.Add("The black toad spits a dark liquid at you and burns you for " + damage + " damage.");
+            damageMessages.Add("The black toad attacks you for " + damage + " damage.");
+            damageMessages.Add("The black toad jumps at you and before you can raise your hand it has dealt " + damage + " damage.");
+
+        }
+        if(enemy.transform.tag == "WhiteEagle")
+        {
+            damage = enemyStrengths[1];
+        }
+        if(enemy.transform.tag == "RedPelican")
+        {
+            damage = enemyStrengths[2];
+        } 
+        if(enemy.transform.tag == "GreenLion")
+        {
+            damage = enemyStrengths[3];
+        }
+
+        Log(damageMessages[Random.Range(0, damageMessages.Count())]);
+        
+        hp -= damage;
+        GameObject.Find("HP").GetComponent<Text>().text = "HP: " + hp.ToString();
+
+        // if player HP < 1
+        if (hp < 1)
+        {
+            
+            EndGame();
+        }
+    }
 
     void EndGame()
     {
+        Log("You have been exhausted and the world blurs.");
+        //   Log("This struggle has overcome you for now");
+        gameOver = true;
+        Log("Do you want to try again? Press N to start the new attempt");
         Debug.Log("GAME OVER");
     }
 
