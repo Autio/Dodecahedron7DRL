@@ -95,6 +95,10 @@ public class GameController : MonoBehaviour {
                 index += 1;
                 if (index > 11) index = 0;
             }
+            if(Input.GetKeyDown(KeyCode.O))
+            {
+                BuyDrillThrough();
+            }
         }
 
         // Reset stage
@@ -132,6 +136,21 @@ public class GameController : MonoBehaviour {
                     SpawnEnemy(enemyTypes.lion, 2);
                 }
             }
+
+            // Item purchasing
+            if(Input.GetKeyDown(KeyCode.Alpha1))
+            {
+                BuyDrillThrough();
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+
+            }
+            if (Input.GetKeyDown(KeyCode.Alpha3))
+            {
+
+            }
+
 
             // go fetch new move from player input
             int newMove = Movement(index);
@@ -229,6 +248,11 @@ public class GameController : MonoBehaviour {
                     GameObject.Find("HP").GetComponent<Text>().text = "HP: " + hp.ToString();
                     GameObject.Find("Gold").GetComponent<Text>().text = "Gold: " + gold.ToString();
 
+                    // Check for win condition
+                    // All tiles golden
+                    CheckEnd();
+
+                    // AI moves
                     try
                     {
                         if (toads.Count > 0)
@@ -599,10 +623,9 @@ public class GameController : MonoBehaviour {
             }
             catch
             {
-
+              
             }
         } 
-
 
         int targetFace = -1;
         // manual movement
@@ -628,7 +651,6 @@ public class GameController : MonoBehaviour {
         }
         return targetFace;
     }
-
 
     int ProximityCheck(int sourceTile, int targetTile)
     {
@@ -916,6 +938,130 @@ public class GameController : MonoBehaviour {
         {
             
             EndGame();
+        }
+    }
+    // Items
+    void BuyDrillThrough()
+    {
+        int cost = 1;
+        // effect: transport to other side of the map, if you can
+        // Check first before buying
+        int[] opposites = {7,12,11,10,9,8,1,2,3,4,5};
+        pentagon player = null;
+        pentagon opposite;
+        foreach(pentagon p in pentagons)
+        {
+            try
+            {
+                if(p.GetOccupier().transform.tag == "Player")
+                {
+                    player = p;
+                }
+            }
+            catch
+            {
+                Debug.Log("Had an issue accessing the occupier");
+            }
+        }
+        foreach(pentagon p in pentagons)
+        {
+            try
+            {
+                if(p.GetIndex() == opposites[player.GetIndex()] - 1)
+                {
+                    Debug.Log("The opposite of your tile is tile " + (opposites[player.GetIndex()]).ToString());
+                    try
+                    {
+
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+            catch
+            {
+                Debug.Log("Couldn't find the index of the opposite side tile");
+            }
+        }
+
+        if (gold > cost)
+        {
+            if (MovePlayerObject(opposites[player.GetIndex()]))
+            {
+                gold -= cost;
+                Log("You spend some gold to travel further");
+                GameObject.Find("Gold").GetComponent<Text>().text = "Gold " + gold.ToString();
+            }
+            else
+            {
+                Log("You cannot travel far because the destination is blocked.");
+            }
+
+        } else
+        {
+            Log("You do not have enough gold to travel far.");
+        }
+    }
+    void BuyHealing()
+    {
+        int cost = 2;
+        if(gold > cost)
+        {
+            gold -= cost;
+            // effect: restore full health
+            hp = 10;
+
+            Log("You feel better.");
+
+            GameObject.Find("HP").GetComponent<Text>().text = "HP " + hp.ToString();
+            GameObject.Find("Gold").GetComponent<Text>().text = "Gold: " + gold.ToString();
+        }
+    }
+    void BuyAttack()
+    {
+        int cost = 3;
+        if (gold > cost)
+        {
+            gold -= cost;
+            // effect: attack all adjacent tiles
+            
+
+
+            GameObject.Find("HP").GetComponent<Text>().text = "HP " + hp.ToString();
+            GameObject.Find("Gold").GetComponent<Text>().text = "Gold: " + gold.ToString();
+
+        }
+    }
+
+
+
+
+    void CheckEnd()
+    {
+        int goldenSides = 0;
+        foreach(pentagon p in pentagons)
+        {
+            try
+            {
+                if(p.GetState() >= 4)
+                {
+                    goldenSides++;
+                }
+            }
+            catch
+            {
+                
+            }
+        }
+        if(goldenSides >= 12)
+        {
+            // Player wins
+            Debug.Log("YOU WIN");
+            gamestate = gamestates.inBetween;
+            Log("Congratulations. You have covered all your sides in gold. Now, take that perfection and smash it into pieces.");
+            Log("You've won the game. Play more? Press N for a new game.");
         }
     }
 
