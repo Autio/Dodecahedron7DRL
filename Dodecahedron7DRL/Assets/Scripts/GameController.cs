@@ -117,8 +117,6 @@ public class GameController : MonoBehaviour {
         // player turn
         if (gamestate == gamestates.playerTurn)
         {
-            int newMove = Movement(index);
-
             if (DebugOn)
             {
                 if (Input.GetKeyDown(KeyCode.B))
@@ -134,6 +132,10 @@ public class GameController : MonoBehaviour {
                     SpawnEnemy(enemyTypes.lion, 2);
                 }
             }
+
+            // go fetch new move from player input
+            int newMove = Movement(index);
+
             if (newMove != -1)
             {
                 index = newMove - 1;
@@ -171,13 +173,20 @@ public class GameController : MonoBehaviour {
                                     int toadTotal = 0;
                                     foreach (pentagon p in pentagons)
                                     {
-                                        if(p.GetOccupier().transform.tag == "BlackToad")
+                                        try
                                         {
-                                            toadTotal++;
+                                            if (p.GetOccupier().transform.tag == "BlackToad")
+                                            {
+                                                toadTotal++;
+                                            }
+                                            if (p.GetState() > 0)
+                                            {
+                                                toadTotal++;
+                                            }
                                         }
-                                        if(p.GetState() > 0)
+                                        catch
                                         {
-                                            toadTotal++;
+                                            Debug.Log("Could not get occupier of pentagon " + p.GetIndex());
                                         }
                                     }
                                     if (toadTotal < 11)
@@ -318,8 +327,12 @@ public class GameController : MonoBehaviour {
                         Destroy(o, 0.1f);
                         // colour the tile black
                         SetPentagonColour(Color.black, p.GetTile());
-                        Log("You stomp on the wretched black little thing and smush it to pieces");
+                        Log("You stomp on the wretched black little thing and smush it to pieces.");
 
+                    }
+                    else
+                    {
+                        Log("You cannot best the toad there");
                     }
                 }
 
@@ -338,7 +351,10 @@ public class GameController : MonoBehaviour {
                         // colour the tile bright white
                         SetPentagonColour(Color.white, p.GetTile());
                
-
+                    }
+                    else
+                    {
+                        Log("You cannot trap the eagle on that side.");
                     }
                 }
 
@@ -356,7 +372,10 @@ public class GameController : MonoBehaviour {
                         SetPentagonColour(Color.red, p.GetTile());
        
                     }
-
+                    else
+                    {
+                        Log("The pelican needs to be on a white tile to be tamed.");
+                    }
 
                 }
 
@@ -374,6 +393,10 @@ public class GameController : MonoBehaviour {
                         // colour the tile yellow
                         SetPentagonColour(Color.yellow, p.GetTile());
        
+                    }
+                    else
+                    {
+                        Log("The lion will succumb only when upon a red base.");
                     }
                 }
                 else
@@ -561,29 +584,47 @@ public class GameController : MonoBehaviour {
         }
     }
 
-    int Movement(int sourceFace)
+    int Movement(int sourceFace = 0)
     {
+        int[] sourceLinks = new int[5];
+        // get sourceFace from the tile the player is occupying
+        foreach (pentagon p in pentagons)
+        {
+            try
+            {
+                if (p.GetOccupier().transform.tag == "Player")
+                {
+                    sourceLinks = p.GetLinks();
+                }
+            }
+            catch
+            {
+
+            }
+        } 
+
+
         int targetFace = -1;
         // manual movement
         if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Keypad9))
         {
-            targetFace = tileLinks[sourceFace][0];
+            targetFace = sourceLinks[0];
         }
         if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.Keypad6))
         {
-            targetFace = tileLinks[sourceFace][1];
+            targetFace = sourceLinks[1];
         }
         if (Input.GetKeyDown(KeyCode.X) || Input.GetKeyDown(KeyCode.Keypad2))
         {
-            targetFace = tileLinks[sourceFace][2];
+            targetFace = sourceLinks[2];
         }
         if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.Keypad4))
         {
-            targetFace = tileLinks[sourceFace][3];
+            targetFace = sourceLinks[3];
         }
         if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.Keypad7))
         {
-            targetFace = tileLinks[sourceFace][4];
+            targetFace = sourceLinks[4];
         }
         return targetFace;
     }
@@ -834,13 +875,15 @@ public class GameController : MonoBehaviour {
 
         // Fire off an effect?
         GameObject newEffect = Instantiate(sprayEffect, enemyTile.GetTile().transform);
+        float effectOffset = -0.8f;
+        newEffect.transform.position = new Vector3(enemyTile.GetTile().transform.position.x, enemyTile.GetTile().transform.position.y, enemyTile.GetTile().transform.position.z + effectOffset);
         newEffect.transform.LookAt(playerObject.transform);
-        Destroy(newEffect, 1.0f);
-
+        Destroy(newEffect, 2.0f);
 
         List<string> damageMessages = new List<string>();
         // derive attack power from enemy type
         GameObject enemy = enemyTile.GetOccupier();
+
         if(enemy.transform.tag == "BlackToad")
         {
             damage = enemyStrengths[0];
@@ -862,6 +905,7 @@ public class GameController : MonoBehaviour {
             damage = enemyStrengths[3];
         }
 
+        damageMessages.Add("You take " + damage + " damage!");
         Log(damageMessages[Random.Range(0, damageMessages.Count())]);
         
         hp -= damage;
@@ -877,7 +921,23 @@ public class GameController : MonoBehaviour {
 
     void EndGame()
     {
-        Log("You have been exhausted and the world blurs.");
+        // possible end messages
+        List<string> endMessages = new List<string>();
+        endMessages.Add("Your powers are spent for now.");
+        endMessages.Add("You have been exhausted and the world blurs.");
+        endMessages.Add("The struggle has overpowered you this time. You need some deep rest.");
+        Log(endMessages[Random.Range(0, endMessages.Count())]);
+        // how many golden sides?
+        int goldenSides = 0;
+        foreach(pentagon p in pentagons)
+        {
+            if(p.GetState() >= 4)
+            {
+                goldenSides++;
+            }
+        }
+
+        Log("You took " + turnCounter + " turns, picked up " + gold + " pieces of gold and turned " + goldenSides + " sides into gold.");
         //   Log("This struggle has overcome you for now");
         gameOver = true;
         Log("Do you want to try again? Press N to start the new attempt");
