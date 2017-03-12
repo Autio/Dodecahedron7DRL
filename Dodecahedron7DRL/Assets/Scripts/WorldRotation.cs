@@ -9,12 +9,17 @@ public class WorldRotation : MonoBehaviour {
 		
 	}
 
-    private void OnMouseDrag()
+    void update()
     {
-        float rotX = 0;
-        rotX += Input.GetAxis("Mouse X") * speed * Mathf.Deg2Rad;
-        //float rotY = Input.GetAxis("Mouse Y") * speed * Mathf.Deg2Rad;
-    //    float rotZ = transform.rotation.z;
-        transform.eulerAngles = new Vector3(rotX, transform.eulerAngles.y, transform.eulerAngles.z);
+        if (Input.GetMouseButtonDown(0))
+        { // if left button pressed...
+          //  Ray ray = .ScreenPointToRay(Input.mousePosition);
+            //RaycastHit hit;
+            //if (Physics.Raycast(ray, out hit))
+            {
+                // the object identified by hit.transform was clicked
+                // do whatever you want
+            }
+        }
     }
 }

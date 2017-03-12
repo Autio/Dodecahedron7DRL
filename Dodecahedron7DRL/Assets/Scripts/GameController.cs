@@ -24,6 +24,10 @@ public class GameController : MonoBehaviour {
     public GameObject lionObject;
     int index = 0;
     int turnCounter = 0;
+    int turnLastSpawned = 0;
+    int enemyTypeCounter = 0;
+    int hp = 10; // when 0 die
+    int gold = 0;
     public GameObject mainEventLog;
     string log = "";
 
@@ -110,7 +114,58 @@ public class GameController : MonoBehaviour {
                     gamestate = gamestates.opponentTurn;
                     // increment turn
                     turnCounter += 1;
+                    // When turns pass, it's time to spawn new enemies
+                    // check how many tiles are occupied already, don't spawn if more than x are occupied
+                    int tilesOccupied = 0;
+                    foreach(pentagon p in pentagons)
+                    {
+                        if(p.GetOccupied())
+                        {
+                            tilesOccupied++;
+                        }
+                    }
+                    if(tilesOccupied < 8)
+                    {
+                        if ((turnCounter - turnLastSpawned) > 5)
+                        {
+                            int r = Random.Range(0, 10);
+                            if(r < 5)
+                            {
+                                // spawn next enemy
+                                turnLastSpawned = turnCounter;
+                                // either spawn more toads, or the next in the wave
+                                int s = Random.Range(0, 10);
+                                if (s < 4)
+                                {
+                                    // spawn toads
+                                    SpawnEnemy(enemyTypes.toad, 2);
+                                }
+                                else
+                                { // spawn something else
+                                    enemyTypeCounter += 1;
+                                    if (enemyTypeCounter > 3)
+                                    {
+                                        enemyTypeCounter = 0;
+                                    }
+                                    if (enemyTypeCounter == 1)
+                                    {
+                                        SpawnEnemy(enemyTypes.eagle, 2);
+                                    } else if(enemyTypeCounter == 2)
+                                    {
+                                        SpawnEnemy(enemyTypes.pelican, 2);
+
+                                    } else if(enemyTypeCounter == 3)
+                                    {
+                                        SpawnEnemy(enemyTypes.lion, 2);
+                                    }
+                                }
+                            }    
+                        }
+                    }
+
                     GameObject.Find("MovesTaken").GetComponent<Text>().text = "Moves taken: " + turnCounter.ToString();
+                    GameObject.Find("HP").GetComponent<Text>().text = "HP: " + hp.ToString();
+                    GameObject.Find("Gold").GetComponent<Text>().text = "Gold: " + gold.ToString();
 
                     try
                     {
@@ -601,39 +656,55 @@ public class GameController : MonoBehaviour {
             {
                 toads.Add(newEnemy);
                 Debug.Log("Creating toad on tile " + targetTile);
+                string[] creationMessages =
+                {
+                    "A black toad appears.",
+                    "Some crack in the floor has brought forth a black toad.",
+                    "You hear the bristly ribbit of a nearby black toad.",
+                    "There is no shortage of black toads in this world and here comes another one.",
+                    "A black toad takes its allotted place and lets out a mournful croak.",
+                    "A loud, lustful song lets you know a black toad has appeared."
+                };
 
-                int r = Random.Range(0, 10);
-                if (r < 3)
-                {
-                    Log("A black toad appears");
-
-                }
-                else if (r < 6)
-                {
-                    Log("Some crack in the floor has brought forth a black toad");
-                }
-                else
-                {
-                    Log("You hear the bristly ribbit of a nearby black toad");
-                }
+                Log(creationMessages[Random.Range(0, creationMessages.Count())]);
 
             }
             if (e == enemyTypes.eagle)
             {
                 eagles.Add(newEnemy);
                 Debug.Log("Creating eagle on tile " + targetTile);
+                string[] creationMessages =
+                {
+                    "A white eagle swoops down near you.",
+                    ""
+                };
+
+                Log(creationMessages[Random.Range(0, creationMessages.Count())]);
 
             }
             if (e == enemyTypes.pelican)
             {
                 pelicans.Add(newEnemy);
                 Debug.Log("Creating pelican on tile " + targetTile);
+                string[] creationMessages =
+                {
+                    "You notice a pelican snorting loudly nearby, its chest covered in red entrails.",
+                    "You suddenly smell fish and vomit. A red, flightless pelican is stepping towards you."
+                };
+
+                Log(creationMessages[Random.Range(0, creationMessages.Count())]);
 
             }
             if (e == enemyTypes.lion)
             {
                 lions.Add(newEnemy);
                 Debug.Log("Creating lion on tile " + targetTile);
+                string[] creationMessages =
+                {
+                    "You see a green lion. Its strange figure is all the more terrifying for being somehow familiar.",
+                    "A green lion is here, growling. It roars with bottomless hunger as if it could eat the sun.",
+                    "The sound of heavy paws on stone alert you to the presence of a green lion"
+                };
             }
 
             if (attempts<0)
