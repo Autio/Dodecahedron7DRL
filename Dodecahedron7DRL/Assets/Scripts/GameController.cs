@@ -8,15 +8,20 @@ public class GameController : MonoBehaviour {
     public bool DebugOn = true;
     enum gamestates { inBetween, playerTurn, opponentTurn };
     gamestates gamestate = gamestates.playerTurn;
+    enum enemyTypes { toad, eagle, pelican, lion };
     public List<int[]> tileLinks = new List<int[]>();
     public List<GameObject> faces = new List<GameObject>();
     List<pentagon> pentagons = new List<pentagon>();
     List<GameObject> toads = new List<GameObject>();
     List<GameObject> eagles = new List<GameObject>();
+    List<GameObject> pelicans = new List<GameObject>();
+    List<GameObject> lions = new List<GameObject>();
     List<GameObject> allOpponents = new List<GameObject>();
     public GameObject playerObject;
     public GameObject toadObject;
     public GameObject eagleObject;
+    public GameObject pelicanObject;
+    public GameObject lionObject;
     int index = 0;
     int turnCounter = 0;
     public GameObject mainEventLog;
@@ -58,7 +63,7 @@ public class GameController : MonoBehaviour {
         // Initialise player
         SpawnPlayer();
 
-        SpawnToads(2);
+        SpawnEnemy(enemyTypes.toad, 2);
     }
 
     // Update is called once per frame
@@ -85,7 +90,15 @@ public class GameController : MonoBehaviour {
 
             if(Input.GetKeyDown(KeyCode.B))
             {
-                SpawnEagles(2);
+                SpawnEnemy(enemyTypes.eagle,2);
+            }
+            if (Input.GetKeyDown(KeyCode.P))
+            {
+                SpawnEnemy(enemyTypes.pelican, 2);
+            }
+            if (Input.GetKeyDown(KeyCode.L))
+            {
+                SpawnEnemy(enemyTypes.lion, 2);
             }
 
             if (newMove != -1)
@@ -115,7 +128,21 @@ public class GameController : MonoBehaviour {
                                 BasicAIMove(eagles[i]);
                             }
                         }
-                        
+                        if (pelicans.Count > 0)
+                        {
+                            for (int i = 0; i < eagles.Count; i++)
+                            {
+                                BasicAIMove(pelicans[i]);
+                            }
+                        }
+                        if (lions.Count > 0)
+                        {
+                            for (int i = 0; i < eagles.Count; i++)
+                            {
+                                BasicAIMove(lions[i]);
+                            }
+                        }
+
                     }
                     catch
                     {
@@ -481,7 +508,7 @@ public class GameController : MonoBehaviour {
 
     void SpawnPlayer()
     {
-        PlaceOnFace(playerObject, 0, -0.2f);
+        PlaceOnFace(playerObject, 0, -0.1f);
         pentagons[0].SetOccupied(true);
         pentagons[0].SetOccupier(playerObject);
     }
@@ -515,28 +542,26 @@ public class GameController : MonoBehaviour {
             toads.Add(newToad);
             allOpponents.Add(newToad);
             created += 1;
-
-            int r = Random.Range(0, 10);
-            if(r < 3)
-            {
-                Log("A black toad appears");
-
-            } else if (r < 6)
-            {
-                Log("Some crack in the floor has brought forth a black toad");
-            } else
-            {
-                Log("You hear the bristly ribbit of a nearby black toad");
-            }
-
-            
-
         }
 
     }
 
-    void SpawnEagles(int amount)
+    void SpawnEnemy(enemyTypes e, int amount)
     {
+        GameObject enemyObject = null;
+        if(e == enemyTypes.toad)
+        {
+            enemyObject = toadObject;
+        } else if (e == enemyTypes.eagle)
+        {
+            enemyObject = eagleObject;
+        } else if (e == enemyTypes.pelican)
+        {
+            enemyObject = pelicanObject;
+        } else if (e == enemyTypes.lion)
+        {
+            enemyObject = lionObject;
+        }
         // second level spawn
         // don't spawn next to player, don't spawn on top of each other
         List<int> occupiedTiles = new List<int>();
@@ -561,21 +586,57 @@ public class GameController : MonoBehaviour {
                 targetTile = Random.Range(1, 11);
             }
 
-            GameObject newEagle = Instantiate(eagleObject, pentagons[targetTile].GetTile().transform.position, Quaternion.identity) as GameObject;
+            GameObject newEnemy = Instantiate(enemyObject, pentagons[targetTile].GetTile().transform.position, Quaternion.identity) as GameObject;
 
-            PlaceOnFace(newEagle, targetTile, -0.2f);
+            PlaceOnFace(newEnemy, targetTile, -0.05f);
             occupiedTiles.Add(targetTile);
             pentagons[targetTile].SetOccupied(true);
-            pentagons[targetTile].SetOccupier(newEagle);
+            pentagons[targetTile].SetOccupier(newEnemy);
             
-            Debug.Log("Creating eagle on tile " + targetTile);
-         
-            eagles.Add(newEagle);
-            allOpponents.Add(newEagle);
+            allOpponents.Add(newEnemy);
 
             created += 1;
 
-            if(attempts<0)
+            if (e == enemyTypes.toad)
+            {
+                toads.Add(newEnemy);
+                Debug.Log("Creating toad on tile " + targetTile);
+
+                int r = Random.Range(0, 10);
+                if (r < 3)
+                {
+                    Log("A black toad appears");
+
+                }
+                else if (r < 6)
+                {
+                    Log("Some crack in the floor has brought forth a black toad");
+                }
+                else
+                {
+                    Log("You hear the bristly ribbit of a nearby black toad");
+                }
+
+            }
+            if (e == enemyTypes.eagle)
+            {
+                eagles.Add(newEnemy);
+                Debug.Log("Creating eagle on tile " + targetTile);
+
+            }
+            if (e == enemyTypes.pelican)
+            {
+                pelicans.Add(newEnemy);
+                Debug.Log("Creating pelican on tile " + targetTile);
+
+            }
+            if (e == enemyTypes.lion)
+            {
+                lions.Add(newEnemy);
+                Debug.Log("Creating lion on tile " + targetTile);
+            }
+
+            if (attempts<0)
             {
                 break;
             }
@@ -585,14 +646,15 @@ public class GameController : MonoBehaviour {
 
 
 
-    void PlaceOnFace(GameObject g, int targetTile, float offset = 0.2f)
+    void PlaceOnFace(GameObject g, int targetTile, float offset = 0.1f)
     {
         g.transform.position = (faces[targetTile].transform.position);
-        
-        g.transform.Translate(Vector3.forward * offset);
         g.transform.SetParent(faces[targetTile].transform);
         g.transform.rotation = faces[targetTile].transform.rotation;
         g.transform.eulerAngles += new Vector3(0, 0, 180);
+        g.transform.Translate(Vector3.forward * offset);
+
+
     }
 
 
