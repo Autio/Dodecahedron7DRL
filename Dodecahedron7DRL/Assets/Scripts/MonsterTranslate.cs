@@ -13,7 +13,6 @@ public class MonsterTranslate : MonoBehaviour {
 	void Update () {
 		
 	}
-    void OnTriggerStay()
-    { }
+
 
 }

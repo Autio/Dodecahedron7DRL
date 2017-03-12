@@ -18,6 +18,7 @@ public class GameController : MonoBehaviour {
     public GameObject toadObject;
     public GameObject eagleObject;
     int index = 0;
+    int turnCounter = 0;
     public GameObject mainEventLog;
     string log = "";
 
@@ -94,6 +95,10 @@ public class GameController : MonoBehaviour {
                 if (MovePlayerObject(newMove))
                 {
                     gamestate = gamestates.opponentTurn;
+                    // increment turn
+                    turnCounter += 1;
+                    GameObject.Find("MovesTaken").GetComponent<Text>().text = "Moves taken: " + turnCounter.ToString();
+
                     try
                     {
                         if (toads.Count > 0)
