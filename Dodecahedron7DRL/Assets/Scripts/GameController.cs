@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameController : MonoBehaviour {
     public bool DebugOn = true;
@@ -17,6 +18,8 @@ public class GameController : MonoBehaviour {
     public GameObject toadObject;
     public GameObject eagleObject;
     int index = 0;
+    public GameObject mainEventLog;
+    string log = "";
 
     // Use this for initialization
     void Start() {
@@ -163,7 +166,7 @@ public class GameController : MonoBehaviour {
                         Destroy(o, 0.1f);
                         // colour the tile black
                         SetPentagonColour(Color.black, p.GetTile());
-                        
+                        Log("You stomp on the wretched black little thing and smush it to pieces");
 
                     }
                 }
@@ -506,8 +509,22 @@ public class GameController : MonoBehaviour {
             Debug.Log("Creating toad on tile " + targetTile);
             toads.Add(newToad);
             allOpponents.Add(newToad);
-
             created += 1;
+
+            int r = Random.Range(0, 10);
+            if(r < 3)
+            {
+                Log("A black toad appears");
+
+            } else if (r < 6)
+            {
+                Log("Some crack in the floor has brought forth a black toad");
+            } else
+            {
+                Log("You hear the bristly ribbit of a nearby black toad");
+            }
+
+            
 
         }
 
@@ -648,5 +665,12 @@ public class GameController : MonoBehaviour {
     void EndGame()
     {
         Debug.Log("GAME OVER");
+    }
+
+    void Log(string s)
+    {
+        string output = s + "\n" + log;
+        log = output;
+        mainEventLog.GetComponent<Text>().text = log;
     }
 }
