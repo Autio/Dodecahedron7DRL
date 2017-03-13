@@ -25,15 +25,17 @@ public class GameController : MonoBehaviour {
     public GameObject pelicanObject;
     public GameObject lionObject;
     public GameObject goldObject;
+    public GameObject aludelObject;
     // effects
     public GameObject sprayEffect;
 
-    int[] enemyStrengths = { 1, 2, 4, 8 }; // toad, eagle, pelican, lion
+    int[] enemyStrengths = { 1, 2, 3, 4 }; // toad, eagle, pelican, lion
     int index = 0;
     int turnCounter = 0;
     int turnLastSpawned = 0;
     int enemyTypeCounter = 0;
-    int hp = 10; // when 0 die
+    int hp = 20; // when 0 die
+    int fullHP = 20;
     int gold = 1;
     public GameObject mainEventLog;
     string log = "";
@@ -149,6 +151,10 @@ public class GameController : MonoBehaviour {
             if (Input.GetKeyDown(KeyCode.Alpha3))
             {
                 BuyAttack();
+            }
+            if (Input.GetKeyDown(KeyCode.S))
+            {
+                DropAludel();
             }
 
 
@@ -405,7 +411,7 @@ public class GameController : MonoBehaviour {
 
                 else if (o.transform.tag == "GreenLion")
                 {
-                    if (p.GetState() == 4)
+                    if (p.GetState() == 3)
                     {
                         validMove = true;
                         p.SetOccupier(null);
@@ -416,11 +422,19 @@ public class GameController : MonoBehaviour {
                         Destroy(o, 0.1f);
                         // colour the tile yellow
                         SetPentagonColour(Color.yellow, p.GetTile());
-       
+
+
+                        // Player gets gold
+                        Log("The lion had swallowed gold! You pick up what's left.");
+                        gold += 2;
+                        GameObject.Find("Gold").GetComponent<Text>().text = "Gold " + gold.ToString();
+
+
+
                     }
                     else
                     {
-                        Log("The lion will succumb only when upon a red base.");
+                        Log("The lion will yield only when stood upon a red base.");
                     }
                 }
                 else
@@ -839,7 +853,7 @@ public class GameController : MonoBehaviour {
         int[] links; // which five other pentagons are adjacent
         bool occupied;
         int state; // 0 blank, 1 black, 2 white, 3 red, 4 gold
-
+        bool trapped = false;
 
         public GameObject GetTile()
         {
@@ -890,6 +904,14 @@ public class GameController : MonoBehaviour {
         {
             state = Mathf.Clamp(st, 0, 4);
         }
+        public bool GetTrapped()
+        {
+            return trapped;
+        }
+        public void SetTrapped(bool isTrapped)
+        {
+            trapped = isTrapped;
+        }
         public void PrintAll()
         {
             Debug.Log(string.Format("Pentagon index: {0} Occupied: {1} State: {2}", index, occupied, state));
@@ -926,14 +948,23 @@ public class GameController : MonoBehaviour {
         if(enemy.transform.tag == "WhiteEagle")
         {
             damage = enemyStrengths[1];
+            damageMessages.Add("The white eagle shrieks and tears at you causing " + damage + " damage.");
+            damageMessages.Add("The eagle's cry makes your ears ring. You take " + damage + " damage.");
+            damageMessages.Add("The quickened eagle gnaws at your face. You suffer " + damage + " damage.");
+
         }
-        if(enemy.transform.tag == "RedPelican")
+        if (enemy.transform.tag == "RedPelican")
         {
             damage = enemyStrengths[2];
-        } 
-        if(enemy.transform.tag == "GreenLion")
+            damageMessages.Add("The pelican smashes its beak against you. " + damage + " damage.");
+            damageMessages.Add("The red pelican swoops down at your face. You take " + damage + " damage.");
+            damageMessages.Add("Angered, the red pelican takes a swipe at you. You take " + damage + " damage.");
+        }
+        if (enemy.transform.tag == "GreenLion")
         {
             damage = enemyStrengths[3];
+            damageMessages.Add("The green lion leaps at you with overwhelming force. You take " + damage + " damage.");
+
         }
 
         damageMessages.Add("You take " + damage + " damage!");
@@ -1020,7 +1051,7 @@ public class GameController : MonoBehaviour {
         {
             gold -= cost;
             // effect: restore full health
-            hp = 10;
+            hp = fullHP;
 
             Log("You feel better.");
 
@@ -1100,6 +1131,19 @@ public class GameController : MonoBehaviour {
             Log("Congratulations. You have covered all your sides in gold. Now, take that perfection and smash it into pieces.");
             Log("You've won the game. Play more? Press N for a new game.");
         }
+    }
+
+    public void DropAludel()
+    {
+        // drops a trap where the player is and if an opponent steps on the trap then they blow up
+        
+        // check player tile for existing trap
+        
+        // check if any aludels remain in the inventory
+        
+        // implement stepping onto aludel for enemies
+
+
     }
 
     void EndGame()
