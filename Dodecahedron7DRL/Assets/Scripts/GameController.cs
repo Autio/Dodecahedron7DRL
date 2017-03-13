@@ -34,7 +34,7 @@ public class GameController : MonoBehaviour {
     int turnLastSpawned = 0;
     int enemyTypeCounter = 0;
     int hp = 10; // when 0 die
-    int gold = 0;
+    int gold = 1;
     public GameObject mainEventLog;
     string log = "";
 
@@ -143,12 +143,12 @@ public class GameController : MonoBehaviour {
                 BuyDrillThrough();
             }
             if (Input.GetKeyDown(KeyCode.Alpha2))
-                {
-
+            {
+                BuyHealing();
             }
             if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-
+                BuyAttack();
             }
 
 
@@ -315,7 +315,7 @@ public class GameController : MonoBehaviour {
         targetTile.SetOccupied(true);
     }
 
-    bool MovePlayerObject(int targetTile, float offset = -0.1f)
+    bool MovePlayerObject(int targetTile, float offset = -0.1f, bool attackOnly = false)
     {
         bool validMove = true;
         pentagon p = pentagons[targetTile - 1];
@@ -366,7 +366,7 @@ public class GameController : MonoBehaviour {
                     {
                         validMove = true;
                         p.SetOccupier(null);
-                        p.SetState(1);
+                        p.SetState(2);
                         allOpponents.Remove(o);
                         eagles.Remove(o);
 
@@ -448,7 +448,16 @@ public class GameController : MonoBehaviour {
                 }
             }
 
-            MoveObject(source, p);
+            if (!attackOnly)
+            {
+                MoveObject(source, p);
+            } else
+            {
+                GameObject FX = Instantiate(sprayEffect, p.GetTile().transform);
+                FX.transform.position = p.GetTile().transform.position;
+                FX.transform.LookAt(-GameObject.Find("Dodecahedron").transform.position);
+                Destroy(FX, 2.0f);
+            }
         /*    playerObject.transform.position = (p.GetTile().transform.position);
             playerObject.transform.SetParent(p.GetTile().transform);
             playerObject.transform.rotation = p.GetTile().transform.rotation;
@@ -941,12 +950,12 @@ public class GameController : MonoBehaviour {
         }
     }
     // Items
-    void BuyDrillThrough()
+    public void BuyDrillThrough()
     {
         int cost = 1;
         // effect: transport to other side of the map, if you can
         // Check first before buying
-        int[] opposites = {7,12,11,10,9,8,1,2,3,4,5};
+        int[] opposites = {7,12,11,10,9,8,1,2,3,4,5,6};
         pentagon player = null;
         pentagon opposite;
         foreach(pentagon p in pentagons)
@@ -986,7 +995,7 @@ public class GameController : MonoBehaviour {
             }
         }
 
-        if (gold > cost)
+        if (gold >= cost)
         {
             if (MovePlayerObject(opposites[player.GetIndex()]))
             {
@@ -1004,10 +1013,10 @@ public class GameController : MonoBehaviour {
             Log("You do not have enough gold to travel far.");
         }
     }
-    void BuyHealing()
+    public void BuyHealing()
     {
         int cost = 2;
-        if(gold > cost)
+        if(gold >= cost)
         {
             gold -= cost;
             // effect: restore full health
@@ -1017,21 +1026,49 @@ public class GameController : MonoBehaviour {
 
             GameObject.Find("HP").GetComponent<Text>().text = "HP " + hp.ToString();
             GameObject.Find("Gold").GetComponent<Text>().text = "Gold: " + gold.ToString();
+        } else
+        {
+            Log("You do not have enough gold to replenish yourself.");
         }
     }
-    void BuyAttack()
+    public void BuyAttack()
     {
         int cost = 3;
-        if (gold > cost)
+        if (gold >= cost)
         {
             gold -= cost;
             // effect: attack all adjacent tiles
-            
+            pentagon player = null;
+            foreach (pentagon p in pentagons)
+            {
+                try
+                {
+                    if (p.GetOccupier().transform.tag == "Player")
+                    {
+                        player = p;
+                    }
+                }
+                catch
+                {
 
+                }
+            }
+
+            int[] adjacentTiles = new int[5];
+            adjacentTiles = player.GetLinks();
+            for(int i = 0; i < 5; i++)
+            {
+                MovePlayerObject(tileLinks[player.GetIndex()][i], -0.1f, true);
+            }
 
             GameObject.Find("HP").GetComponent<Text>().text = "HP " + hp.ToString();
             GameObject.Find("Gold").GetComponent<Text>().text = "Gold: " + gold.ToString();
 
+
+
+        } else
+        {
+            Log("You do not have enough gold to be so vigorous and stir everything nearby.");
         }
     }
 

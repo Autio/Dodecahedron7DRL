@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/Mercury Kiss.unity
+- path: Assets/Stir Mercury.unity
   isLoaded: 1
   isActive: 1
