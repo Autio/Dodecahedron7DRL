@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class MouseControls : MonoBehaviour
 {
-
     float heightMax = 2.5f;
     float heightMin = -8.5f;
     float scrollSpeed = 1.5f;

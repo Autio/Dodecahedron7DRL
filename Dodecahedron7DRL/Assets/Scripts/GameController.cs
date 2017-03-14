@@ -25,7 +25,7 @@ public class GameController : MonoBehaviour {
     public GameObject pelicanObject;
     public GameObject lionObject;
     public GameObject goldObject;
-    public GameObject aludelObject;
+    public GameObject retortObject;
     // effects
     public GameObject sprayEffect;
 
@@ -37,6 +37,7 @@ public class GameController : MonoBehaviour {
     int hp = 20; // when 0 die
     int fullHP = 20;
     int gold = 1;
+    int retorts = 3;
     public GameObject mainEventLog;
     string log = "";
 
@@ -114,6 +115,8 @@ public class GameController : MonoBehaviour {
         // A D
         //  X
 
+        // S for wait / stand still
+
         if(gameOver)
         {
             gamestate = gamestates.inBetween;
@@ -152,18 +155,22 @@ public class GameController : MonoBehaviour {
             {
                 BuyAttack();
             }
-            if (Input.GetKeyDown(KeyCode.S))
+            if (Input.GetKeyDown(KeyCode.R))
             {
-                DropAludel();
+//                DropRetort();
             }
 
 
             // go fetch new move from player input
             int newMove = Movement(index);
+         
 
+            // Regular moves
             if (newMove != -1)
             {
                 index = newMove - 1;
+               
+
                 // move player object
                 if (MovePlayerObject(newMove))
                 {
@@ -237,7 +244,7 @@ public class GameController : MonoBehaviour {
                                     } else if(enemyTypeCounter == 3)
                                     {
                                         SpawnEnemy(enemyTypes.lion, 2);
-                                        enemyTypeCounter = 0;
+                                        enemyTypeCounter = 1;
                                     }
                                 }
 
@@ -306,7 +313,6 @@ public class GameController : MonoBehaviour {
     void MoveObject(pentagon sourceTile, pentagon targetTile, float offset = -0.1f)
     {
         GameObject s = sourceTile.GetOccupier();
-
         // move transform
         s.transform.position = (targetTile.GetTile().transform.position);
         s.transform.SetParent(targetTile.GetTile().transform);
@@ -324,6 +330,7 @@ public class GameController : MonoBehaviour {
     bool MovePlayerObject(int targetTile, float offset = -0.1f, bool attackOnly = false)
     {
         bool validMove = true;
+        bool waiting = false;
         pentagon p = pentagons[targetTile - 1];
         if (p.GetOccupied())
         {
@@ -423,13 +430,10 @@ public class GameController : MonoBehaviour {
                         // colour the tile yellow
                         SetPentagonColour(Color.yellow, p.GetTile());
 
-
                         // Player gets gold
                         Log("The lion had swallowed gold! You pick up what's left.");
                         gold += 2;
                         GameObject.Find("Gold").GetComponent<Text>().text = "Gold " + gold.ToString();
-
-
 
                     }
                     else
@@ -437,7 +441,13 @@ public class GameController : MonoBehaviour {
                         Log("The lion will yield only when stood upon a red base.");
                     }
                 }
-                else
+                // staying still
+                else if (p.GetOccupier() == playerObject)
+                {
+                    Log("You stand still.");
+                    validMove = true;
+                    waiting = true;
+                } else 
                 {
                     // if the opponent isn't standing on a proper tile then you can't move there
                     Debug.Log("Can't move there, wrong tile and opponent combination");
@@ -467,10 +477,13 @@ public class GameController : MonoBehaviour {
                 MoveObject(source, p);
             } else
             {
-                GameObject FX = Instantiate(sprayEffect, p.GetTile().transform);
-                FX.transform.position = p.GetTile().transform.position;
-                FX.transform.LookAt(-GameObject.Find("Dodecahedron").transform.position);
-                Destroy(FX, 2.0f);
+                if (!waiting)
+                {
+                    GameObject FX = Instantiate(sprayEffect, p.GetTile().transform);
+                    FX.transform.position = p.GetTile().transform.position;
+                    FX.transform.LookAt(-GameObject.Find("Dodecahedron").transform.position);
+                    Destroy(FX, 2.0f);
+                }
             }
         /*    playerObject.transform.position = (p.GetTile().transform.position);
             playerObject.transform.SetParent(p.GetTile().transform);
@@ -672,6 +685,12 @@ public class GameController : MonoBehaviour {
         {
             targetFace = sourceLinks[4];
         }
+        // wait
+        if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.Keypad5))
+        {
+            targetFace = sourceFace + 1;
+        }
+
         return targetFace;
     }
 
@@ -779,6 +798,8 @@ public class GameController : MonoBehaviour {
                 {
                     "A black toad appears.",
                     "Another black toad appears.",
+                    "You feel the presence of a black toad nearby.",
+                    "A black toad appears. You resolve to not fear that darkness.",
                     "Dark foamy spawn has grown into a full toad. It stares at you fixedly.",
                     "Some crack in the floor has brought forth a black toad.",
                     "You hear the bristly ribbit of a nearby black toad.",
@@ -849,11 +870,12 @@ public class GameController : MonoBehaviour {
     {
         GameObject tile;
         GameObject occupierObject;
+        GameObject trapObject = null;
         int index; // 1 - 12
         int[] links; // which five other pentagons are adjacent
         bool occupied;
         int state; // 0 blank, 1 black, 2 white, 3 red, 4 gold
-        bool trapped = false;
+       
 
         public GameObject GetTile()
         {
@@ -904,13 +926,17 @@ public class GameController : MonoBehaviour {
         {
             state = Mathf.Clamp(st, 0, 4);
         }
-        public bool GetTrapped()
+        public GameObject GetTrapped()
         {
-            return trapped;
+            return trapObject;
         }
-        public void SetTrapped(bool isTrapped)
+        public void SetTrapped(GameObject trap)
         {
-            trapped = isTrapped;
+            trapObject = trap;
+        }
+        public void ClearTrap()
+        {
+            trapObject = null;
         }
         public void PrintAll()
         {
@@ -1095,15 +1121,12 @@ public class GameController : MonoBehaviour {
             GameObject.Find("HP").GetComponent<Text>().text = "HP " + hp.ToString();
             GameObject.Find("Gold").GetComponent<Text>().text = "Gold: " + gold.ToString();
 
-
-
-        } else
+        }
+        else
         {
             Log("You do not have enough gold to be so vigorous and stir everything nearby.");
         }
     }
-
-
 
 
     void CheckEnd()
@@ -1133,17 +1156,44 @@ public class GameController : MonoBehaviour {
         }
     }
 
-    public void DropAludel()
+    public void DropRetort(int dropTileIndex = 0)
     {
-        // drops a trap where the player is and if an opponent steps on the trap then they blow up
-        
-        // check player tile for existing trap
-        
+        pentagon dropTile = null;
+        foreach (pentagon p in pentagons)
+        {
+            if (p.GetIndex() == dropTileIndex)
+            {
+                dropTile = p;
+            }
+        }
+
         // check if any aludels remain in the inventory
+        if (retorts > 0)
+        {
+            // check player tile for existing trap
+            if (dropTile.GetTrapped() != null)
+            {
+                // drops a trap where the player is and if an opponent steps on the trap then they blow up
+                retorts--;
+                GameObject retort = Instantiate(retortObject, transform);
+                //PlaceOnFace(aludel, )
+                GameObject.Find("RetortLabel").GetComponent<Text>().text = "[R] Drop a retort. (" + retorts + " remain)";
+
+            } else
+            {
+                Log("There already is a retort on this face!");
+            }
+        }
+        else
+        {
+            Log("You don't have any retorts left!");
+        }
+
+        
+        
         
         // implement stepping onto aludel for enemies
-
-
+        
     }
 
     void EndGame()

@@ -7,6 +7,8 @@ public class Rotation : MonoBehaviour {
     float rotX, rotY, rotZ;
     public float speed = 1.0f;
 
+    float hackCounter = 1.0f;// making rotation less annoying with a workaround
+
     float angleOffset = 0.0f;
     float angleStart = 0.0f;
     float camDist;
@@ -25,14 +27,24 @@ public class Rotation : MonoBehaviour {
     */
     private void OnMouseOver()
     {
-        if (Input.GetMouseButton(1))
+
+        if (Input.GetMouseButton(1) || Input.GetMouseButton(0))
         {
-            float rotX = Input.GetAxis("Mouse X") * speed * Mathf.Deg2Rad;
-            float rotY = Input.GetAxis("Mouse Y") * speed * Mathf.Deg2Rad;
-            float rotZ = transform.rotation.z;
-//            transform.Rotate(Vector3.up, -rotX);
-            transform.Rotate(rotY, -rotX, rotZ, Space.World);
- //           transform.Rotate(new Vector3(transform.rotation.x, transform.rotation.y, rotZ));          
+            if (hackCounter > 0)
+            {
+                hackCounter -= Time.deltaTime;
+                float rotX = Input.GetAxis("Mouse X") * speed * Mathf.Deg2Rad;
+                float rotY = Input.GetAxis("Mouse Y") * speed * Mathf.Deg2Rad;
+                float rotZ = transform.rotation.z;
+                //            transform.Rotate(Vector3.up, -rotX);
+                transform.Rotate(rotY, -rotX, rotZ, Space.World);
+                //           transform.Rotate(new Vector3(transform.rotation.x, transform.rotation.y, rotZ));          
+            }
+  
+        }
+        else
+        {
+            hackCounter = 1.0f;
         }
     }
 
@@ -49,7 +61,7 @@ public class Rotation : MonoBehaviour {
 	void Update () {
         if (autoRotate)
         {
-            if (Input.GetKeyDown(KeyCode.R))
+            if (Input.GetKeyDown(KeyCode.M))
             {
                 RotationReset();
             }
