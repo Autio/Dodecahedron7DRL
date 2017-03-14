@@ -5,6 +5,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
+// TODO
+// Swap Pelican and Lion
+// Dropping Retorts and enemies moving onto them
+// Music
+
 public class GameController : MonoBehaviour {
     public bool DebugOn = true;
     bool gameOver =false;
@@ -22,14 +27,14 @@ public class GameController : MonoBehaviour {
     public GameObject playerObject;
     public GameObject toadObject;
     public GameObject eagleObject;
-    public GameObject pelicanObject;
     public GameObject lionObject;
+    public GameObject pelicanObject;
     public GameObject goldObject;
     public GameObject retortObject;
     // effects
     public GameObject sprayEffect;
 
-    int[] enemyStrengths = { 1, 2, 3, 4 }; // toad, eagle, pelican, lion
+    int[] enemyStrengths = { 1, 2, 3, 4 }; // toad, eagle, lion, pelican
     int index = 0;
     int turnCounter = 0;
     int turnLastSpawned = 0;
@@ -239,11 +244,10 @@ public class GameController : MonoBehaviour {
                                         SpawnEnemy(enemyTypes.eagle, 2);
                                     } else if(enemyTypeCounter == 2)
                                     {
-                                        SpawnEnemy(enemyTypes.pelican, 2);
-
+                                        SpawnEnemy(enemyTypes.lion, 2);
                                     } else if(enemyTypeCounter == 3)
                                     {
-                                        SpawnEnemy(enemyTypes.lion, 2);
+                                        SpawnEnemy(enemyTypes.pelican, 2);
                                         enemyTypeCounter = 1;
                                     }
                                 }
@@ -282,13 +286,6 @@ public class GameController : MonoBehaviour {
                                 BasicAIMove(eagles[i]);
                             }
                         }
-                        if (pelicans.Count > 0)
-                        {
-                            for (int i = 0; i < pelicans.Count; i++)
-                            {
-                                BasicAIMove(pelicans[i]);
-                            }
-                        }
                         if (lions.Count > 0)
                         {
                             for (int i = 0; i < lions.Count; i++)
@@ -296,6 +293,14 @@ public class GameController : MonoBehaviour {
                                 BasicAIMove(lions[i]);
                             }
                         }
+                        if (pelicans.Count > 0)
+                        {
+                            for (int i = 0; i < pelicans.Count; i++)
+                            {
+                                BasicAIMove(pelicans[i]);
+                            }
+                        }
+
 
                     }
                     catch
@@ -395,30 +400,9 @@ public class GameController : MonoBehaviour {
                     }
                 }
 
-                else if (o.transform.tag == "RedPelican")
-                {
-                    if (p.GetState() == 2)
-                    {
-                        validMove = true;
-                        p.SetOccupier(null);
-                        p.SetState(3);
-                        allOpponents.Remove(o);
-                        pelicans.Remove(o);
-                        Destroy(o, 0.1f);
-                        // colour the tile black
-                        SetPentagonColour(Color.red, p.GetTile());
-       
-                    }
-                    else
-                    {
-                        Log("The pelican needs to be on a white tile to be tamed.");
-                    }
-
-                }
-
                 else if (o.transform.tag == "GreenLion")
                 {
-                    if (p.GetState() == 3)
+                    if (p.GetState() == 2)
                     {
                         validMove = true;
                         p.SetOccupier(null);
@@ -427,20 +411,42 @@ public class GameController : MonoBehaviour {
                         lions.Remove(o);
 
                         Destroy(o, 0.1f);
-                        // colour the tile yellow
-                        SetPentagonColour(Color.yellow, p.GetTile());
+                        // colour the tile green
+                        SetPentagonColour(Color.green, p.GetTile());
 
-                        // Player gets gold
-                        Log("The lion had swallowed gold! You pick up what's left.");
-                        gold += 2;
-                        GameObject.Find("Gold").GetComponent<Text>().text = "Gold " + gold.ToString();
+
 
                     }
                     else
                     {
-                        Log("The lion will yield only when stood upon a red base.");
+                        Log("The lion will yield only when stood upon a white base.");
                     }
                 }
+                else if (o.transform.tag == "RedPelican")
+                {
+                    if (p.GetState() == 3)
+                    {
+                        validMove = true;
+                        p.SetOccupier(null);
+                        p.SetState(4);
+                        allOpponents.Remove(o);
+                        pelicans.Remove(o);
+                        Destroy(o, 0.1f);
+                        // colour the tile golden
+                        SetPentagonColour(Color.yellow, p.GetTile());
+                        // Player gets gold
+                        Log("The pelican left behind some gold. You pick it up.");
+                        Log("This face is shining bright.");
+                        gold += 2;
+                        GameObject.Find("Gold").GetComponent<Text>().text = "Gold " + gold.ToString();
+                    }
+                    else
+                    {
+                        Log("The pelican needs to be on a green tile to be tamed.");
+                    }
+
+                }
+
                 // staying still
                 else if (p.GetOccupier() == playerObject)
                 {
@@ -824,6 +830,17 @@ public class GameController : MonoBehaviour {
                 Log(creationMessages[Random.Range(0, creationMessages.Count())]);
 
             }
+            if (e == enemyTypes.lion)
+            {
+                lions.Add(newEnemy);
+                Debug.Log("Creating lion on tile " + targetTile);
+                string[] creationMessages =
+                {
+                    "You see a green lion. Its strange figure is all the more terrifying for being somehow familiar.",
+                    "A green lion is here, growling. It roars with bottomless hunger as if it could eat the sun.",
+                    "The sound of heavy paws on stone alert you to the presence of a green lion"
+                };
+            }
             if (e == enemyTypes.pelican)
             {
                 pelicans.Add(newEnemy);
@@ -837,17 +854,7 @@ public class GameController : MonoBehaviour {
                 Log(creationMessages[Random.Range(0, creationMessages.Count())]);
 
             }
-            if (e == enemyTypes.lion)
-            {
-                lions.Add(newEnemy);
-                Debug.Log("Creating lion on tile " + targetTile);
-                string[] creationMessages =
-                {
-                    "You see a green lion. Its strange figure is all the more terrifying for being somehow familiar.",
-                    "A green lion is here, growling. It roars with bottomless hunger as if it could eat the sun.",
-                    "The sound of heavy paws on stone alert you to the presence of a green lion"
-                };
-            }
+
 
             if (attempts<0)
             {
@@ -979,18 +986,19 @@ public class GameController : MonoBehaviour {
             damageMessages.Add("The quickened eagle gnaws at your face. You suffer " + damage + " damage.");
 
         }
-        if (enemy.transform.tag == "RedPelican")
+
+        if (enemy.transform.tag == "GreenLion")
         {
             damage = enemyStrengths[2];
+            damageMessages.Add("The green lion leaps at you with overwhelming force. You take " + damage + " damage.");
+
+        }
+        if (enemy.transform.tag == "RedPelican")
+        {
+            damage = enemyStrengths[3];
             damageMessages.Add("The pelican smashes its beak against you. " + damage + " damage.");
             damageMessages.Add("The red pelican swoops down at your face. You take " + damage + " damage.");
             damageMessages.Add("Angered, the red pelican takes a swipe at you. You take " + damage + " damage.");
-        }
-        if (enemy.transform.tag == "GreenLion")
-        {
-            damage = enemyStrengths[3];
-            damageMessages.Add("The green lion leaps at you with overwhelming force. You take " + damage + " damage.");
-
         }
 
         damageMessages.Add("You take " + damage + " damage!");
